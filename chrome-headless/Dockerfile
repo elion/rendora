@@ -1,7 +1,7 @@
 # based on justinribeiro/chrome-headless but modified to suit Rendora's goal for server-side rendering
 # current default Chrome flags are recommended to be used for your own website purposes only
 # based on rendora/dockerfiles: https://github.com/rendora/dockerfiles
-FROM debian:stretch-slim
+FROM debian:bookworm-slim
 LABEL name="chrome-headless" \
 			version="1.0" \
 			description="Headless Chrome"
@@ -25,7 +25,7 @@ RUN groupadd -r chrome && useradd -r -g chrome -G audio,video chrome \
     && mkdir -p /home/chrome && chown -R chrome:chrome /home/chrome \
 		&& mkdir -p /opt/google/chrome && chown -R chrome:chrome /opt/google/chrome
 
-ENV TINI_VERSION v0.19.0
+ENV TINI_VERSION=v0.19.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
 USER chrome
