@@ -1,7 +1,10 @@
 # based on justinribeiro/chrome-headless but modified to suit Rendora's goal for server-side rendering
 # current default Chrome flags are recommended to be used for your own website purposes only
 # based on rendora/dockerfiles: https://github.com/rendora/dockerfiles
-FROM debian:bookworm-slim
+FROM ubuntu:noble
+ENV DEBIAN_FRONTEND=noninteractive
+
+ARG CHROME_VERSION="135.0.7049.84-1"
 LABEL name="chrome-headless" \
 			version="1.0" \
 			description="Headless Chrome"
@@ -9,17 +12,13 @@ LABEL name="chrome-headless" \
 RUN apt-get update && apt-get install -y \
 	apt-transport-https \
 	ca-certificates \
-	curl \
+ 	fontconfig \
+	wget \
 	gnupg \
 	--no-install-recommends \
-	&& curl -sSL https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
-	&& echo "deb https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
-	&& apt-get update && apt-get install -y \
-	google-chrome-stable \
-	fontconfig \
-	--no-install-recommends \
-	&& apt-get purge --auto-remove -y curl gnupg \
-	&& rm -rf /var/lib/apt/lists/*
+        && wget --no-verbose -O /tmp/chrome.deb https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}_amd64.deb \
+	&& apt install -y /tmp/chrome.deb \
+        && rm -rf /var/lib/apt/lists/* /tmp/chrome.deb
 
 RUN groupadd -r chrome && useradd -r -g chrome -G audio,video chrome \
     && mkdir -p /home/chrome && chown -R chrome:chrome /home/chrome \
