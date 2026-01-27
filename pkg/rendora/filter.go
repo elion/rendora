@@ -37,7 +37,7 @@ func isInSlice(slice []string, str string) bool {
 	return false
 }
 
-func hasPrefixinSlice(slice []string, str string) bool {
+func hasPrefixInSlice(slice []string, str string) bool {
 	for _, s := range slice {
 		if strings.HasPrefix(str, s) {
 			return true
@@ -46,7 +46,7 @@ func hasPrefixinSlice(slice []string, str string) bool {
 	return false
 }
 
-//isWhitelisted checks whether the current request is whitelisted (i.e. should be SSR'ed) or not
+// isWhitelisted checks whether the current request is whitelisted (i.e. should be SSR'ed) or not
 func (R *Rendora) isWhitelisted(c *gin.Context) bool {
 	mua := c.Request.Header.Get("User-Agent")
 	muaLower := strings.ToLower(mua)
@@ -57,26 +57,23 @@ func (R *Rendora) isWhitelisted(c *gin.Context) bool {
 
 	switch filters.UserAgent.Default {
 	case "whitelist":
-
 		if lenKeywords > 0 && isKeywordInSlice(filters.UserAgent.Exceptions.Keywords, muaLower) {
-			return false
+			return true
 		}
 		if lenExceptions > 0 && isInSlice(filters.UserAgent.Exceptions.Exact, mua) {
-			return false
+			return true
 		}
-		break
+		return false
 	case "blacklist":
-		if lenKeywords == 0 && lenExceptions == 0 {
-			return false
-		}
-		if lenKeywords > 0 && isKeywordInSlice(filters.UserAgent.Exceptions.Keywords, muaLower) == false {
-			return false
+		if lenKeywords > 0 && isKeywordInSlice(filters.UserAgent.Exceptions.Keywords, muaLower) {
+			break
 		}
 
-		if lenExceptions > 0 && isInSlice(filters.UserAgent.Exceptions.Exact, mua) == false {
-			return false
+		if lenExceptions > 0 && isInSlice(filters.UserAgent.Exceptions.Exact, mua) {
+			break
 		}
 
+		return false
 	}
 
 	uri := c.Request.RequestURI
@@ -84,11 +81,11 @@ func (R *Rendora) isWhitelisted(c *gin.Context) bool {
 	switch filters.Paths.Default {
 	case "blacklist":
 		if len(filters.Paths.Exceptions.Exact) > 0 && isInSlice(filters.Paths.Exceptions.Exact, uri) {
-			return true
+			break
 		}
 
-		if len(filters.Paths.Exceptions.Prefix) > 0 && hasPrefixinSlice(filters.Paths.Exceptions.Prefix, uri) {
-			return true
+		if len(filters.Paths.Exceptions.Prefix) > 0 && hasPrefixInSlice(filters.Paths.Exceptions.Prefix, uri) {
+			break
 		}
 		return false
 	case "whitelist":
@@ -96,7 +93,7 @@ func (R *Rendora) isWhitelisted(c *gin.Context) bool {
 			return false
 		}
 
-		if len(filters.Paths.Exceptions.Prefix) > 0 && hasPrefixinSlice(filters.Paths.Exceptions.Prefix, uri) {
+		if len(filters.Paths.Exceptions.Prefix) > 0 && hasPrefixInSlice(filters.Paths.Exceptions.Prefix, uri) {
 			return false
 		}
 		return true
@@ -104,4 +101,5 @@ func (R *Rendora) isWhitelisted(c *gin.Context) bool {
 		return false
 	}
 
+	return true
 }

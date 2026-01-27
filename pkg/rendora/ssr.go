@@ -19,9 +19,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/css"
-	"github.com/tdewolff/minify/v2/html"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -106,10 +103,7 @@ func (R *Rendora) getResponse(uri string) (*HeadlessResponse, error) {
 		return nil, err
 	}
 	if R.c.Output.Minify {
-		m := minify.New()
-		m.AddFunc("text/html", html.Minify)
-		m.AddFunc("text/css", css.Minify)
-		dt.Content, err = m.String("text/html", dt.Content)
+		dt.Content, err = R.m.String("text/html", dt.Content)
 		if err != nil {
 			return nil, err
 		}

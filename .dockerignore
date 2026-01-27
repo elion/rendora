@@ -1,0 +1,8 @@
+.git
+.circleci
+.idea
+vendor
+node_modules
+*.exe
+*.test
+cmd/rendora/rendora

@@ -16,7 +16,6 @@ package rendora
 import (
 	"fmt"
 	"net/http"
-	"net/http/httputil"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,14 +24,7 @@ import (
 )
 
 func (R *Rendora) getProxy(c *gin.Context) {
-	director := func(req *http.Request) {
-		req.Host = R.backendURL.Host
-		req.URL.Scheme = R.backendURL.Scheme
-		req.URL.Host = R.backendURL.Host
-		req.RequestURI = c.Request.RequestURI
-	}
-	proxy := &httputil.ReverseProxy{Director: director}
-	proxy.ServeHTTP(c.Writer, c.Request)
+	R.proxy.ServeHTTP(c.Writer, c.Request)
 }
 
 func (R *Rendora) middleware() gin.HandlerFunc {
@@ -103,7 +95,7 @@ var (
 	g errgroup.Group
 )
 
-//Run starts Rendora proxy nd API (if enabled) servers
+// Run starts Rendora proxy nd API (if enabled) servers
 func (R *Rendora) Run() error {
 
 	if R.c.Debug == false {
@@ -126,7 +118,7 @@ func (R *Rendora) Run() error {
 	return nil
 }
 
-//New creates a new Rendora instance
+// New creates a new Rendora instance
 func New(cfgFile string) (*Rendora, error) {
 	rendora := &Rendora{
 		c:       &rendoraConfig{},

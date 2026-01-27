@@ -15,17 +15,18 @@ package rendora
 
 import (
 	"log"
+	"net/http"
+	"net/http/httputil"
 	"net/url"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/spf13/viper"
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/minify/v2/css"
+	"github.com/tdewolff/minify/v2/html"
 )
 
-type backend struct {
-	URL string
-}
-
-//rendoraConfig represents the global configuration of Rendora
+// rendoraConfig represents the global configuration of Rendora
 type rendoraConfig struct {
 	HeadlessMode string `mapstructure:"headlessMode" valid:"in(default|internal|external)"`
 	Debug        bool   `mapstructure:"debug"`
@@ -131,9 +132,9 @@ func (R *Rendora) initConfig() error {
 	viper.SetDefault("headless.internal.url", "http://localhost:9222")
 	viper.SetDefault("filters.useragent.defaultPolicy", "blacklist")
 	viper.SetDefault("filters.paths.defaultPolicy", "whitelist")
-	viper.SetDefault("server.enable", "false")
+	viper.SetDefault("server.enable", false)
 	viper.SetDefault("server.listen.address", "0.0.0.0")
-	viper.SetDefault("server.listen.port", "9242")
+	viper.SetDefault("server.listen.port", 9242)
 	viper.SetDefault("server.auth.enable", false)
 	viper.SetDefault("server.auth.name", "X-Auth-Rendora")
 	viper.SetDefault("server.auth.value", "")
@@ -178,6 +179,18 @@ func (R *Rendora) initConfig() error {
 
 	log.Println("Connected to headless Chrome")
 
+	R.proxy = &httputil.ReverseProxy{
+		Director: func(req *http.Request) {
+			req.Host = R.backendURL.Host
+			req.URL.Scheme = R.backendURL.Scheme
+			req.URL.Host = R.backendURL.Host
+		},
+	}
+
+	R.m = minify.New()
+	R.m.AddFunc("text/html", html.Minify)
+	R.m.AddFunc("text/css", css.Minify)
+
 	if R.c.Server.Enable {
 		R.initPrometheus()
 	}
@@ -186,11 +199,13 @@ func (R *Rendora) initConfig() error {
 
 }
 
-//Rendora contains the main structure instance
+// Rendora contains the main structure instance
 type Rendora struct {
 	c          *rendoraConfig
 	cache      *cacheStore
 	backendURL *url.URL
+	proxy      *httputil.ReverseProxy
+	m          *minify.M
 	h          *headlessClient
 	metrics    *metrics
 	cfgFile    string

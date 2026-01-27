@@ -15,14 +15,17 @@ package rendora
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"time"
 
-	"github.com/go-redis/redis"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/redis/go-redis/v9"
 
-	cache "github.com/patrickmn/go-cache"
+	"github.com/patrickmn/go-cache"
 )
 
-//cacheStore represents the cache store
+// cacheStore represents the cache store
 type cacheStore struct {
 	DefaultTimeout time.Duration
 	Type           uint8
@@ -37,7 +40,7 @@ const (
 	typeNone  = 2
 )
 
-//InitCacheStore initializes the cache store
+// InitCacheStore initializes the cache store
 func (R *Rendora) initCacheStore() {
 	cs := &cacheStore{
 		DefaultTimeout: time.Duration(R.c.Cache.Timeout) * time.Second,
@@ -64,7 +67,7 @@ func (R *Rendora) initCacheStore() {
 	R.cache = cs
 }
 
-//Set stores HeadlessResponse in the cache with the key cKey (i.e. request path)
+// Set stores HeadlessResponse in the cache with the key cKey (i.e. request path)
 func (c *cacheStore) set(cKey string, d *HeadlessResponse) error {
 
 	switch c.Type {
@@ -72,13 +75,13 @@ func (c *cacheStore) set(cKey string, d *HeadlessResponse) error {
 		c.gocache.Set(cKey, d, cache.DefaultExpiration)
 	case typeRedis:
 		op := &bytes.Buffer{}
-		enc := json.NewEncoder(op)
+		enc := jsoniter.NewEncoder(op)
 		enc.SetEscapeHTML(false)
 		err := enc.Encode(d)
 		if err != nil {
 			return err
 		}
-		err = c.redis.SetNX(cKey, string(op.Bytes()), c.DefaultTimeout).Err()
+		err = c.redis.Set(context.Background(), cKey, op.String(), c.DefaultTimeout).Err()
 		if err != nil {
 			return err
 		}
@@ -88,7 +91,7 @@ func (c *cacheStore) set(cKey string, d *HeadlessResponse) error {
 	return nil
 }
 
-//Get gets HeadlessResponse from the cache with the key cKey (i.e. request path)
+// Get gets HeadlessResponse from the cache with the key cKey (i.e. request path)
 func (c *cacheStore) get(cKey string) (*HeadlessResponse, bool, error) {
 
 	switch c.Type {
@@ -102,14 +105,17 @@ func (c *cacheStore) get(cKey string) (*HeadlessResponse, bool, error) {
 		}
 		return nil, false, nil
 	case typeRedis:
-		val, err := c.redis.Get(cKey).Result()
-		if err == redis.Nil {
+		val, err := c.redis.Get(context.Background(), cKey).Result()
+		if errors.Is(err, redis.Nil) {
 			return nil, false, nil
 		} else if err != nil {
 			return nil, false, err
 		} else {
 			var dt HeadlessResponse
-			json.Unmarshal([]byte(val), &dt)
+			err := jsoniter.Unmarshal([]byte(val), &dt)
+			if err != nil {
+				return nil, false, err
+			}
 			if c.rendora.c.Server.Enable {
 				c.rendora.metrics.CountSSRCached.Inc()
 			}
