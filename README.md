@@ -99,10 +99,10 @@ docker run --net=host -v ./CONFIG_FILE.yaml:/etc/rendora/config.yaml rendora/ren
 ```
 
 ## Documentation
-You can read the docs [here](https://rendora.co/docs/) or [here](docs)
+You can read the docs [here](docs)
 
 ## Configuration
-Configuration is discussed in detail in docs [here](https://rendora.co/docs/configuration/) or [here](docs/configuration)
+Configuration is discussed in detail in docs [here](docs/configuration)
 
 ### A minimal config file example
 ```yaml
